@@ -7,14 +7,18 @@ function validate(req, res, next) {
     return next();
   }
 
+  const errorDetails = errors.array().map((entry) => ({
+    field: entry.param,
+    message: entry.msg
+  }));
+
+  console.log('Validation errors:', errorDetails);
+
   return error(
     res,
     'Thông tin chưa hợp lệ',
     422,
-    errors.array().map((entry) => ({
-      field: entry.param,
-      message: entry.msg
-    }))
+    errorDetails
   );
 }
 

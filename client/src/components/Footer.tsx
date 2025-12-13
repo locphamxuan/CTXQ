@@ -50,14 +50,19 @@ export default function Footer() {
       <div>
         <h5>Kết nối</h5>
         <div className="footer__socials">
-          <a href="https://facebook.com" target="_blank" rel="noreferrer">
+          <a
+            href="https://www.facebook.com/loccphamxuan?locale=vi_VN"
+            target="_blank"
+            rel="noreferrer"
+          >
             Facebook
           </a>
-          <a href="https://instagram.com" target="_blank" rel="noreferrer">
-            Instagram
-          </a>
-          <a href="https://www.linkedin.com" target="_blank" rel="noreferrer">
-            LinkedIn
+          <a
+            href="https://zalo.me/0989024736"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Zalo
           </a>
         </div>
         <small>© {new Date().getFullYear()} CTY XQ Holdings</small>

@@ -9,6 +9,7 @@ import {
 } from '../data/mockContent';
 import type {
   AboutContent,
+  AuthResponse,
   BlogPost,
   BusinessDomain,
   HeroContent,
@@ -18,8 +19,47 @@ import type {
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:4000/api',
-  timeout: 5000
+  timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json'
+  }
 });
+
+// Thêm interceptor để log requests và responses
+api.interceptors.request.use(
+  (config) => {
+    console.log('API Request:', config.method?.toUpperCase(), config.url, config.data);
+    return config;
+  },
+  (error) => {
+    console.error('API Request Error:', error);
+    return Promise.reject(error);
+  }
+);
+
+api.interceptors.response.use(
+  (response) => {
+    console.log('API Response:', response.status, response.config.url, response.data);
+    return response;
+  },
+  (error) => {
+    if (error.response) {
+      // Server trả về error response
+      console.error('API Error Response:', {
+        status: error.response.status,
+        url: error.config?.url,
+        data: error.response.data
+      });
+    } else if (error.request) {
+      // Request được gửi nhưng không nhận được response
+      console.error('API Network Error:', error.message);
+    } else {
+      // Lỗi khi setup request
+      console.error('API Error:', error.message);
+    }
+    return Promise.reject(error);
+  }
+);
 
 type HomeResponse = {
   hero: HeroContent;
@@ -74,5 +114,79 @@ export async function submitContact(payload: {
   message: string;
 }) {
   return api.post('/contact', payload);
+}
+
+export async function register(payload: {
+  username: string;
+  phone: string;
+  address: string;
+  password: string;
+  confirmPassword: string;
+}): Promise<AuthResponse> {
+  try {
+    const response = await api.post<{ success: boolean; data: AuthResponse }>('/auth/register', payload);
+    const { data } = response;
+    
+    if (data.success && data.data) {
+      return data.data;
+    }
+    throw new Error('Invalid response format');
+  } catch (err: any) {
+    // Đảm bảo error response được giữ nguyên để component xử lý
+    if (err.response) {
+      // Server trả về error response (422, 500, etc.)
+      throw err;
+    }
+    // Network error hoặc lỗi khác
+    throw err;
+  }
+}
+
+export async function login(payload: {
+  username: string;
+  password: string;
+}): Promise<AuthResponse> {
+  try {
+    const response = await api.post<{ success: boolean; data: AuthResponse }>('/auth/login', payload);
+    const { data } = response;
+    
+    if (data.success && data.data) {
+      return data.data;
+    }
+    throw new Error('Invalid response format');
+  } catch (err: any) {
+    // Đảm bảo error response được giữ nguyên để component xử lý
+    if (err.response) {
+      // Server trả về error response (401, 422, 500, etc.)
+      throw err;
+    }
+    // Network error hoặc lỗi khác
+    throw err;
+  }
+}
+
+export async function checkout(payload: {
+  userId: number;
+  items: Array<{
+    productId: string;
+    productName: string;
+    price: number;
+    quantity: number;
+  }>;
+  total: number;
+  paymentMethod?: string;
+  transactionCode?: string;
+}) {
+  try {
+    const response = await api.post<{ success: boolean; data: { orderId: number } }>('/orders', payload);
+    const { data } = response;
+    
+    if (data.success && data.data) {
+      return data.data;
+    }
+    throw new Error('Invalid response format');
+  } catch (err: any) {
+    throw err;
+  }
 }
 

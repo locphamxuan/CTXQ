@@ -67,6 +67,15 @@ CREATE TABLE ContactRequests (
   createdAt DATETIME DEFAULT GETDATE()
 );
 
+CREATE TABLE Users (
+  id INT IDENTITY PRIMARY KEY,
+  username NVARCHAR(100) NOT NULL UNIQUE,
+  phone NVARCHAR(30) NOT NULL UNIQUE,
+  address NVARCHAR(255) NOT NULL,
+  passwordHash NVARCHAR(255) NOT NULL,
+  createdAt DATETIME DEFAULT GETDATE()
+);
+
 -- Example seed with JSON payloads
 INSERT INTO BusinessDomains (id, title, summary, quickLinks, contentJson, displayOrder)
 VALUES (

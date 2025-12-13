@@ -10,6 +10,11 @@ import GinsengPage from './pages/Ginseng';
 import CosmeticsPage from './pages/Cosmetics';
 import FashionPage from './pages/Fashion';
 import ConsultingPage from './pages/Consulting';
+import RegisterPage from './pages/Register';
+import LoginPage from './pages/Login';
+import ProfilePage from './pages/Profile';
+import CartPage from './pages/Cart';
+import CheckoutPage from './pages/Checkout';
 
 export default function App() {
   return (
@@ -26,6 +31,11 @@ export default function App() {
           <Route path="/linh-vuc/tu-van-thuong-mai" element={<ConsultingPage />} />
           <Route path="/tin-tuc" element={<BlogPage />} />
           <Route path="/lien-he" element={<ContactPage />} />
+          <Route path="/dang-ky" element={<RegisterPage />} />
+          <Route path="/dang-nhap" element={<LoginPage />} />
+          <Route path="/ho-so" element={<ProfilePage />} />
+          <Route path="/gio-hang" element={<CartPage />} />
+          <Route path="/thanh-toan" element={<CheckoutPage />} />
         </Routes>
       </main>
       <Footer />

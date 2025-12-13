@@ -125,3 +125,16 @@ export type SpecialtyPageContent = {
   articles: BlogPost[];
 };
 
+export type AuthUser = {
+  id: number;
+  username: string;
+  phone: string;
+  address: string;
+  createdAt: string;
+};
+
+export type AuthResponse = {
+  token: string;
+  user: AuthUser;
+};
+

@@ -1,4 +1,3 @@
-import ContactForm from '../components/ContactForm';
 import SectionHeading from '../components/SectionHeading';
 import { contactInfo } from '../data/mockContent';
 
@@ -14,10 +13,9 @@ export default function ContactPage() {
       <div className="contact__info">
         <div>
           <h4>Thông tin</h4>
-          <p>{contactInfo.address}</p>
+          <p>Địa chỉ: {contactInfo.address}</p>
           <p>Điện thoại: {contactInfo.phone}</p>
           <p>Email: {contactInfo.email}</p>
-          <ContactForm />
         </div>
         <div className="contact__map">
           <iframe

@@ -47,9 +47,6 @@ export default function Hero({ content }: HeroProps) {
           <a href={content.ctaPrimary.href} className="btn btn--primary">
             {content.ctaPrimary.label}
           </a>
-          <a href={content.ctaSecondary.href} className="btn btn--ghost">
-            {content.ctaSecondary.label}
-          </a>
         </div>
         <div className="hero__domains">
           {heroDomains.map((domain) => {

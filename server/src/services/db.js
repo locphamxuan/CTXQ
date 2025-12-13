@@ -4,7 +4,14 @@ let pool;
 
 async function getPool() {
   if (pool) {
-    return pool;
+    try {
+      // Kiểm tra xem pool còn hoạt động không
+      await pool.request().query('SELECT 1');
+      return pool;
+    } catch (err) {
+      // Pool đã bị đóng, tạo lại
+      pool = null;
+    }
   }
 
   const config = {
@@ -23,20 +30,44 @@ async function getPool() {
     }
   };
 
-  pool = await sql.connect(config);
-  return pool;
+  try {
+    if (!config.user || !config.password || !config.server || !config.database) {
+      throw new Error('Database configuration is incomplete. Please check your .env file.');
+    }
+
+    pool = await sql.connect(config);
+    console.log('Database connected successfully');
+    return pool;
+  } catch (err) {
+    console.error('Database connection error:', err.message);
+    pool = null;
+    throw err;
+  }
 }
 
 async function query(text, params = []) {
-  const currentPool = await getPool();
-  const request = currentPool.request();
+  try {
+    const currentPool = await getPool();
+    if (!currentPool) {
+      throw new Error('Database connection pool is not available');
+    }
+    
+    const request = currentPool.request();
 
-  params.forEach(({ name, type, value }) => {
-    request.input(name, type || sql.NVarChar, value);
-  });
+    params.forEach(({ name, type, value }) => {
+      request.input(name, type || sql.NVarChar, value);
+    });
 
-  const result = await request.query(text);
-  return result.recordset;
+    const result = await request.query(text);
+    return result.recordset;
+  } catch (err) {
+    console.error('Database query error:', {
+      message: err.message,
+      query: text.substring(0, 100),
+      params: params.map(p => ({ name: p.name, hasValue: !!p.value }))
+    });
+    throw err;
+  }
 }
 
 module.exports = {
