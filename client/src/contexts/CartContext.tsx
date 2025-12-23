@@ -54,17 +54,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
       }
     };
 
-    // Listen for custom event
-    const handleCartChange = () => {
-      loadCart();
-    };
-
+    // Note: Không listen cho 'cart-change' event trong cùng tab vì nó sẽ gây double update
+    // Event 'cart-change' chỉ dùng để notify các components khác, không phải để reload
+    // Chỉ listen cho 'storage' event để sync giữa các tabs
+    
     window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('cart-change', handleCartChange);
     
     return () => {
       window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('cart-change', handleCartChange);
     };
   }, []);
 
@@ -76,8 +73,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
         image: typeof item.image === 'string' ? item.image : (item.image as any)?.src || String(item.image)
       }));
       localStorage.setItem('cart', JSON.stringify(itemsToSave));
-      setItems(itemsToSave);
-      window.dispatchEvent(new Event('cart-change'));
+      // Không gọi setItems ở đây vì state đã được update trong callback
+      // Không dispatch 'cart-change' event vì nó không cần thiết và có thể gây double update
       console.log('Cart saved to localStorage:', itemsToSave);
     } catch (err) {
       console.error('Error saving cart:', err);
@@ -85,6 +82,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   const addToCart = useCallback((item: Omit<CartItem, 'quantity'>) => {
+    // Check if user is authenticated
+    const authUser = localStorage.getItem('auth_user');
+    const authToken = localStorage.getItem('auth_token');
+    if (!authUser || !authToken) {
+      throw new Error('Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng!');
+    }
+
     const now = Date.now();
     const lastAddTime = lastAddTimeRef.current[item.id] || 0;
     const timeSinceLastAdd = now - lastAddTime;
@@ -113,19 +117,22 @@ export function CartProvider({ children }: { children: ReactNode }) {
         // Double check to prevent race conditions
         const existingItem = prevItems.find((i) => i.id === item.id);
         
+        let updatedItems: CartItem[];
         if (existingItem) {
-          const updatedItems = prevItems.map((i) =>
+          // Item đã tồn tại: tăng quantity lên 1
+          updatedItems = prevItems.map((i) =>
             i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
           );
           console.log('Updated cart (existing item):', updatedItems);
-          saveCart(updatedItems);
-          return updatedItems;
         } else {
-          const newItems = [...prevItems, { ...item, quantity: 1 }];
-          console.log('Updated cart (new item):', newItems);
-          saveCart(newItems);
-          return newItems;
+          // Item mới: thêm với quantity = 1
+          updatedItems = [...prevItems, { ...item, quantity: 1 }];
+          console.log('Updated cart (new item):', updatedItems);
         }
+        
+        // Lưu vào localStorage sau khi tính toán xong
+        saveCart(updatedItems);
+        return updatedItems;
       });
 
       // Reset processing flag after a delay
@@ -164,6 +171,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   const clearCart = () => {
+    setItems([]);
     saveCart([]);
   };
 

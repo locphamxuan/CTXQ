@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
-import { checkout } from '../services/api';
+import { checkout, confirmPayment } from '../services/api';
 import qrCodeImage from '../img/QR Thanh toán của Lộc.jpg';
 
 export default function CheckoutPage() {
@@ -11,8 +11,11 @@ export default function CheckoutPage() {
   const navigate = useNavigate();
   const [paymentMethod, setPaymentMethod] = useState<'qr' | 'bank'>('qr');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [paymentStatus, setPaymentStatus] = useState<'pending' | 'processing' | 'success' | 'failed'>('pending');
+  const [paymentStatus, setPaymentStatus] = useState<'pending' | 'processing' | 'success' | 'failed' | 'waiting_payment'>('pending');
   const [transactionCode, setTransactionCode] = useState<string>('');
+  const [orderId, setOrderId] = useState<number | null>(null);
+  const [dynamicQRCode, setDynamicQRCode] = useState<string | null>(null);
+  const [inputTransactionCode, setInputTransactionCode] = useState<string>('');
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -25,32 +28,23 @@ export default function CheckoutPage() {
     }
   }, [isAuthenticated, items.length, navigate]);
 
-  const generateTransactionCode = () => {
-    return 'TX' + Date.now().toString().slice(-8) + Math.random().toString(36).substring(2, 6).toUpperCase();
-  };
-
-  const handlePayment = async () => {
-    console.log('handlePayment called', { user, itemsLength: items.length, paymentMethod });
+  // Step 1: Create order (status: pending)
+  const handleCreateOrder = async () => {
+    console.log('Creating order:', { user, itemsLength: items.length, paymentMethod });
     
     if (!user || items.length === 0) {
-      console.error('Cannot process payment:', { user: !!user, itemsLength: items.length });
-      alert('Không thể thanh toán. Vui lòng kiểm tra lại thông tin.');
+      console.error('Cannot create order:', { user: !!user, itemsLength: items.length });
+      alert('Không thể tạo đơn hàng. Vui lòng kiểm tra lại thông tin.');
       return;
     }
 
     try {
       setIsProcessing(true);
       setPaymentStatus('processing');
-      const txCode = generateTransactionCode();
-      setTransactionCode(txCode);
-      console.log('Payment processing started:', { txCode, total: getTotal() });
 
-      // Simulate payment processing (3 seconds)
-      await new Promise(resolve => setTimeout(resolve, 3000));
-
-      // Save order to database
-      console.log('Saving order to database...');
-      await checkout({
+      // Create order with pending status
+      console.log('Creating order in database...');
+      const orderData = await checkout({
         userId: user.id,
         items: items.map(item => ({
           productId: item.id,
@@ -59,12 +53,44 @@ export default function CheckoutPage() {
           quantity: item.quantity
         })),
         total: getTotal(),
-        paymentMethod: paymentMethod,
-        transactionCode: txCode
+        paymentMethod: paymentMethod
       });
 
-      console.log('Order saved successfully');
+      console.log('Order created successfully:', orderData);
+      setOrderId(orderData.orderId);
+      
+      // Set dynamic QR code if available
+      if (orderData.qrCode) {
+        setDynamicQRCode(orderData.qrCode);
+      }
+      
+      setPaymentStatus('waiting_payment');
+      setIsProcessing(false);
+    } catch (err: any) {
+      console.error('Create order error:', err);
+      alert('Có lỗi xảy ra khi tạo đơn hàng: ' + (err?.response?.data?.message || err?.message || 'Lỗi không xác định'));
+      setPaymentStatus('failed');
+      setIsProcessing(false);
+    }
+  };
+
+  // Step 2: Confirm payment with transaction code
+  const handleConfirmPayment = async () => {
+    if (!orderId || !inputTransactionCode.trim()) {
+      alert('Vui lòng nhập mã giao dịch');
+      return;
+    }
+
+    try {
+      setIsProcessing(true);
+      setPaymentStatus('processing');
+
+      console.log('Confirming payment:', { orderId, transactionCode: inputTransactionCode });
+      await confirmPayment(orderId, inputTransactionCode.trim());
+
+      console.log('Payment confirmed successfully');
       setPaymentStatus('success');
+      setTransactionCode(inputTransactionCode.trim());
       
       // Clear cart after successful payment
       setTimeout(() => {
@@ -72,9 +98,9 @@ export default function CheckoutPage() {
         navigate('/');
       }, 2000);
     } catch (err: any) {
-      console.error('Payment error:', err);
-      alert('Có lỗi xảy ra khi thanh toán: ' + (err?.response?.data?.message || err?.message || 'Lỗi không xác định'));
-      setPaymentStatus('failed');
+      console.error('Confirm payment error:', err);
+      alert('Có lỗi xảy ra khi xác nhận thanh toán: ' + (err?.response?.data?.message || err?.message || 'Lỗi không xác định'));
+      setPaymentStatus('waiting_payment');
       setIsProcessing(false);
     }
   };
@@ -165,25 +191,118 @@ export default function CheckoutPage() {
               </label>
             </div>
 
-            {paymentMethod === 'qr' && (
-              <div className="checkout__qr-section">
-                <div className="checkout__qr-card">
-                  <div className="checkout__qr-header">
-                    <div className="checkout__qr-name">PHAM XUAN LOC</div>
-                    <div className="checkout__qr-account">3170 4624 549</div>
+            {paymentMethod === 'qr' && paymentStatus !== 'waiting_payment' && (
+              <div className="checkout__qr-payment-container">
+                {/* Left Panel: Account Information */}
+                <div className="checkout__account-info">
+                  <h3>Thông tin tài khoản</h3>
+                  <div className="checkout__account-details">
+                    <div className="checkout__account-row">
+                      <label>CHỦ TÀI KHOẢN</label>
+                      <div className="checkout__account-value-wrapper">
+                        <span className="checkout__account-value">PHAM XUAN LOC</span>
+                        <button
+                          type="button"
+                          className="checkout__copy-btn"
+                          onClick={() => {
+                            navigator.clipboard.writeText('PHAM XUAN LOC');
+                            alert('Đã sao chép!');
+                          }}
+                          aria-label="Copy"
+                        >
+                          📋
+                        </button>
+                      </div>
+                    </div>
+                    <div className="checkout__account-row">
+                      <label>SỐ TÀI KHOẢN</label>
+                      <div className="checkout__account-value-wrapper">
+                        <span className="checkout__account-value">3170 4624 549</span>
+                        <button
+                          type="button"
+                          className="checkout__copy-btn"
+                          onClick={() => {
+                            navigator.clipboard.writeText('3170 4624 549');
+                            alert('Đã sao chép!');
+                          }}
+                          aria-label="Copy"
+                        >
+                          📋
+                        </button>
+                      </div>
+                    </div>
+                    <div className="checkout__account-row">
+                      <label>NGÂN HÀNG</label>
+                      <div className="checkout__account-value-wrapper">
+                        <span className="checkout__account-value">TPBank</span>
+                        <button
+                          type="button"
+                          className="checkout__copy-btn"
+                          onClick={() => {
+                            navigator.clipboard.writeText('TPBank');
+                            alert('Đã sao chép!');
+                          }}
+                          aria-label="Copy"
+                        >
+                          📋
+                        </button>
+                      </div>
+                    </div>
+                    <div className="checkout__account-row">
+                      <label>NỘI DUNG CHUYỂN</label>
+                      <div className="checkout__account-value-wrapper">
+                        <span className="checkout__account-value">
+                          {orderId ? `ORDER${orderId}` : 'Mã đơn hàng sẽ hiển thị sau khi tạo đơn'}
+                        </span>
+                        {orderId && (
+                          <button
+                            type="button"
+                            className="checkout__copy-btn"
+                            onClick={() => {
+                              navigator.clipboard.writeText(`ORDER${orderId}`);
+                              alert('Đã sao chép!');
+                            }}
+                            aria-label="Copy"
+                          >
+                            📋
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <div className="checkout__qr-code">
-                    <img 
-                      src={qrCodeImage} 
-                      alt="QR Code thanh toán"
-                      loading="eager"
-                    />
+                  <div className="checkout__exchange-rate">
+                    <p>1.000 VNĐ = 1.000 VNĐ</p>
+                    <small>Tỷ giá quy đổi cố định</small>
                   </div>
-                  <div className="checkout__qr-amount">
-                    Số tiền: <strong>{total.toLocaleString('vi-VN')} ₫</strong>
+                </div>
+
+                {/* Right Panel: QR Code */}
+                <div className="checkout__qr-section">
+                  <h3>Quét mã QR để nạp tiền</h3>
+                  <p className="checkout__qr-description">
+                    Sử dụng ứng dụng ngân hàng để quét mã QR và chuyển tiền tự động
+                  </p>
+                  <div className="checkout__qr-card">
+                    <div className="checkout__qr-code">
+                      {dynamicQRCode ? (
+                        <img 
+                          src={dynamicQRCode} 
+                          alt="QR Code thanh toán động"
+                          loading="eager"
+                        />
+                      ) : (
+                        <img 
+                          src={qrCodeImage} 
+                          alt="QR Code thanh toán"
+                          loading="eager"
+                        />
+                      )}
+                    </div>
                   </div>
-                  <div className="checkout__qr-instruction">
-                    <p>Quét mã QR để thanh toán</p>
+                  <div className="checkout__payment-logos">
+                    <span>napas 247</span>
+                    <span>mo mo</span>
+                    <span>VNPAY</span>
                   </div>
                 </div>
               </div>
@@ -213,7 +332,7 @@ export default function CheckoutPage() {
                     <div className="checkout__bank-note">
                       <strong>Nội dung chuyển khoản:</strong>
                       <div className="checkout__bank-note-code">
-                        {transactionCode || 'Mã đơn hàng sẽ hiển thị sau khi xác nhận'}
+                        {orderId ? `ORDER${orderId}` : 'Mã đơn hàng sẽ hiển thị sau khi tạo đơn'}
                       </div>
                     </div>
                   </div>
@@ -221,6 +340,7 @@ export default function CheckoutPage() {
               </div>
             )}
 
+            {/* Step 1: Create order button */}
             {paymentStatus === 'pending' && !isProcessing && (
               <button
                 type="button"
@@ -228,18 +348,47 @@ export default function CheckoutPage() {
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  console.log('Payment button clicked', { 
-                    paymentStatus, 
-                    isProcessing, 
-                    user: !!user, 
-                    itemsLength: items.length,
-                    total: getTotal()
-                  });
-                  handlePayment();
+                  handleCreateOrder();
                 }}
               >
-                Xác nhận thanh toán
+                Tạo đơn hàng
               </button>
+            )}
+
+            {/* Step 2: Waiting for payment - show transaction code input */}
+            {paymentStatus === 'waiting_payment' && (
+              <div className="checkout__waiting-payment">
+                <div className="checkout__order-created">
+                  <h3>✓ Đơn hàng đã được tạo</h3>
+                  <p>Mã đơn hàng: <strong>#{orderId}</strong></p>
+                  <p className="checkout__instruction">
+                    Vui lòng chuyển khoản <strong>{total.toLocaleString('vi-VN')} ₫</strong> theo thông tin trên.
+                    Sau khi chuyển khoản, vui lòng nhập mã giao dịch để xác nhận.
+                  </p>
+                </div>
+                
+                <div className="checkout__transaction-input">
+                  <label htmlFor="transactionCode">Mã giao dịch (từ ngân hàng):</label>
+                  <input
+                    id="transactionCode"
+                    type="text"
+                    value={inputTransactionCode}
+                    onChange={(e) => setInputTransactionCode(e.target.value)}
+                    placeholder="VD: 1234567890"
+                    disabled={isProcessing}
+                    className="checkout__transaction-input-field"
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  className="btn btn--primary checkout__pay-btn"
+                  onClick={handleConfirmPayment}
+                  disabled={isProcessing || !inputTransactionCode.trim()}
+                >
+                  {isProcessing ? 'Đang xác nhận...' : 'Xác nhận thanh toán'}
+                </button>
+              </div>
             )}
             
             {paymentStatus === 'pending' && isProcessing && (

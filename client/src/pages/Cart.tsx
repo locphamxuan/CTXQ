@@ -1,27 +1,14 @@
-import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
 import { useNavigate } from 'react-router-dom';
-import { useEffect } from 'react';
 
 export default function CartPage() {
-  const { isAuthenticated } = useAuth();
   const { items, removeFromCart, updateQuantity, getTotal } = useCart();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/dang-nhap');
-    }
-  }, [isAuthenticated, navigate]);
 
   const handleCheckout = () => {
     if (items.length === 0) return;
     navigate('/thanh-toan');
   };
-
-  if (!isAuthenticated) {
-    return null;
-  }
 
   if (items.length === 0) {
     return (

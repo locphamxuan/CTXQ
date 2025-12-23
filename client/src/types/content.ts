@@ -131,6 +131,7 @@ export type AuthUser = {
   phone: string;
   address: string;
   createdAt: string;
+  isAdmin?: boolean;
 };
 
 export type AuthResponse = {

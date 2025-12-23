@@ -1,10 +1,11 @@
 const { Router } = require('express');
 const { body } = require('express-validator');
-const { createOrder } = require('../controllers/orderController');
+const { createOrder, getOrder, listOrders, confirmPayment } = require('../controllers/orderController');
 const { validate } = require('../utils/validator');
 
 const router = Router();
 
+// Create new order
 router.post(
   '/',
   [
@@ -18,6 +19,23 @@ router.post(
   ],
   validate,
   createOrder
+);
+
+// Get order by ID
+router.get('/:id', getOrder);
+
+// List orders (with optional filters: ?userId=1&status=pending)
+router.get('/', listOrders);
+
+// Confirm payment (customer submits transaction code)
+router.post(
+  '/confirm',
+  [
+    body('orderId').isInt().withMessage('Mã đơn hàng không hợp lệ'),
+    body('transactionCode').notEmpty().withMessage('Vui lòng nhập mã giao dịch')
+  ],
+  validate,
+  confirmPayment
 );
 
 module.exports = router;

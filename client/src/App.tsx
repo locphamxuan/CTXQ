@@ -15,6 +15,7 @@ import LoginPage from './pages/Login';
 import ProfilePage from './pages/Profile';
 import CartPage from './pages/Cart';
 import CheckoutPage from './pages/Checkout';
+import AdminDashboard from './pages/AdminDashboard';
 
 export default function App() {
   return (
@@ -36,6 +37,7 @@ export default function App() {
           <Route path="/ho-so" element={<ProfilePage />} />
           <Route path="/gio-hang" element={<CartPage />} />
           <Route path="/thanh-toan" element={<CheckoutPage />} />
+          <Route path="/admin" element={<AdminDashboard />} />
         </Routes>
       </main>
       <Footer />

@@ -95,6 +95,11 @@ export default function NavBar() {
         </ul>
       </nav>
       <div className="nav__auth">
+        {isAuthenticated && user && user.isAdmin && (
+          <NavLink to="/admin" className="nav__link">
+            Admin
+          </NavLink>
+        )}
         {isAuthenticated && user ? (
           <div className="nav__user-menu" ref={dropdownRef}>
             <button

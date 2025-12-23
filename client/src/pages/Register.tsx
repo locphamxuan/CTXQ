@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { register } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { AlertDialog } from '../components/Modal';
 
 interface ValidationError {
   field: string;
@@ -12,15 +13,17 @@ interface ValidationError {
 export default function RegisterPage() {
   const navigate = useNavigate();
   const { login: setAuth } = useAuth();
-  const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle');
+  const [status, setStatus] = useState<'idle' | 'loading' | 'error' | 'success'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [showErrorAlert, setShowErrorAlert] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setStatus('loading');
     setErrorMessage('');
     setFieldErrors({});
+    setShowErrorAlert(false);
 
     const formData = new FormData(event.currentTarget);
 
@@ -35,7 +38,11 @@ export default function RegisterPage() {
 
       const result = await register(payload);
       setAuth(result.user, result.token);
-      navigate('/');
+      setStatus('success');
+      // Điều hướng sau khi đăng ký thành công
+      setTimeout(() => {
+        navigate('/');
+      }, 500);
     } catch (err: any) {
       setStatus('error');
       
@@ -45,8 +52,9 @@ export default function RegisterPage() {
         details: err?.response?.data?.details
       });
       
-      // Xử lý lỗi validation từ server
+      // Xử lý lỗi validation từ server (422) hoặc duplicate (409)
       const details = err?.response?.data?.details;
+      
       if (Array.isArray(details) && details.length > 0) {
         const errors: Record<string, string> = {};
         details.forEach((error: ValidationError) => {
@@ -55,13 +63,16 @@ export default function RegisterPage() {
         });
         setFieldErrors(errors);
         
-        // Hiển thị thông báo tổng hợp
-        const firstError = details[0]?.message || 'Thông tin chưa hợp lệ';
-        setErrorMessage(`Vui lòng kiểm tra lại: ${firstError}`);
+        // Hiển thị alert với tất cả lỗi validation
+        const errorMessages = details.map((e: ValidationError) => `• ${e.message}`).join('\n');
+        setErrorMessage(errorMessages);
+        setShowErrorAlert(true);
       } else {
+        // Lỗi khác (500, network error, etc.)
         const message =
           err?.response?.data?.message || 'Đăng ký thất bại, vui lòng thử lại.';
         setErrorMessage(message);
+        setShowErrorAlert(true);
       }
     }
   }
@@ -76,7 +87,8 @@ export default function RegisterPage() {
           <input 
             name="username" 
             required 
-            minLength={4} 
+            minLength={3}
+            maxLength={50}
             className={fieldErrors.username ? 'auth__input--error' : ''}
           />
           {fieldErrors.username && (
@@ -111,7 +123,7 @@ export default function RegisterPage() {
             name="password" 
             type="password" 
             required 
-            minLength={8}
+            minLength={6}
             className={fieldErrors.password ? 'auth__input--error' : ''}
           />
           {fieldErrors.password && (
@@ -124,7 +136,7 @@ export default function RegisterPage() {
             name="confirmPassword" 
             type="password" 
             required 
-            minLength={8}
+            minLength={6}
             className={fieldErrors.confirmPassword ? 'auth__input--error' : ''}
           />
           {fieldErrors.confirmPassword && (
@@ -134,10 +146,16 @@ export default function RegisterPage() {
         <button type="submit" className="btn btn--primary" disabled={status === 'loading'}>
           {status === 'loading' ? 'Đang xử lý...' : 'Đăng ký'}
         </button>
-        {status === 'error' && errorMessage && Object.keys(fieldErrors).length === 0 && (
-          <p className="auth__error">{errorMessage}</p>
-        )}
       </form>
+
+      {/* Error Alert Dialog */}
+      <AlertDialog
+        isOpen={showErrorAlert}
+        onClose={() => setShowErrorAlert(false)}
+        message={errorMessage || 'Đăng ký thất bại, vui lòng thử lại.'}
+        type="error"
+        confirmText="Đóng"
+      />
     </div>
   );
 }

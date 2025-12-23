@@ -1,4 +1,4 @@
-import axios from 'axios';
+import api from './baseApi';
 import {
   heroContent as heroFallback,
   missionContent as missionFallback,
@@ -16,50 +16,6 @@ import type {
   MissionContent,
   NewsItem
 } from '../types/content';
-
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:4000/api',
-  timeout: 10000,
-  headers: {
-    'Content-Type': 'application/json'
-  }
-});
-
-// Thêm interceptor để log requests và responses
-api.interceptors.request.use(
-  (config) => {
-    console.log('API Request:', config.method?.toUpperCase(), config.url, config.data);
-    return config;
-  },
-  (error) => {
-    console.error('API Request Error:', error);
-    return Promise.reject(error);
-  }
-);
-
-api.interceptors.response.use(
-  (response) => {
-    console.log('API Response:', response.status, response.config.url, response.data);
-    return response;
-  },
-  (error) => {
-    if (error.response) {
-      // Server trả về error response
-      console.error('API Error Response:', {
-        status: error.response.status,
-        url: error.config?.url,
-        data: error.response.data
-      });
-    } else if (error.request) {
-      // Request được gửi nhưng không nhận được response
-      console.error('API Network Error:', error.message);
-    } else {
-      // Lỗi khi setup request
-      console.error('API Error:', error.message);
-    }
-    return Promise.reject(error);
-  }
-);
 
 type HomeResponse = {
   hero: HeroContent;
@@ -178,7 +134,24 @@ export async function checkout(payload: {
   transactionCode?: string;
 }) {
   try {
-    const response = await api.post<{ success: boolean; data: { orderId: number } }>('/orders', payload);
+    const response = await api.post<{ success: boolean; data: { orderId: number; status: string; qrCode?: string } }>('/orders', payload);
+    const { data } = response;
+    
+    if (data.success && data.data) {
+      return data.data;
+    }
+    throw new Error('Invalid response format');
+  } catch (err: any) {
+    throw err;
+  }
+}
+
+export async function confirmPayment(orderId: number, transactionCode: string) {
+  try {
+    const response = await api.post<{ success: boolean; data: { orderId: number; status: string } }>('/orders/confirm', {
+      orderId,
+      transactionCode
+    });
     const { data } = response;
     
     if (data.success && data.data) {

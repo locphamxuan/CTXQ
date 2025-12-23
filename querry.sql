@@ -77,6 +77,55 @@ CREATE TABLE ContactRequests (
   createdAt DATETIME DEFAULT GETDATE()
 );
 
+-- Orders table
+CREATE TABLE Orders (
+  id INT IDENTITY PRIMARY KEY,
+  userId INT NOT NULL,
+  total DECIMAL(18, 2) NOT NULL,
+  status NVARCHAR(50) DEFAULT 'pending',
+  createdAt DATETIME DEFAULT GETDATE(),
+  FOREIGN KEY (userId) REFERENCES Users(id)
+);
+
+-- OrderItems table
+CREATE TABLE OrderItems (
+  id INT IDENTITY PRIMARY KEY,
+  orderId INT NOT NULL,
+  productId NVARCHAR(100) NOT NULL,
+  productName NVARCHAR(255) NOT NULL,
+  price DECIMAL(18, 2) NOT NULL,
+  quantity INT NOT NULL,
+  FOREIGN KEY (orderId) REFERENCES Orders(id) ON DELETE CASCADE
+);
+
+IF OBJECT_ID('dbo.MoneySources', 'U') IS NULL
+BEGIN
+  CREATE TABLE MoneySources (
+    id INT IDENTITY PRIMARY KEY,
+    name NVARCHAR(150) NOT NULL,
+    description NVARCHAR(500),
+    createdAt DATETIME DEFAULT GETDATE()
+  );
+END;
+GO
+
+IF OBJECT_ID('dbo.CashFlows', 'U') IS NULL
+BEGIN
+  CREATE TABLE CashFlows (
+    id INT IDENTITY PRIMARY KEY,
+    sourceId INT NOT NULL,
+    amount DECIMAL(18, 2) NOT NULL,
+    type NVARCHAR(10) NOT NULL, -- 'IN' (thu) hoặc 'OUT' (chi)
+    note NVARCHAR(500),
+    occurredAt DATETIME NOT NULL DEFAULT GETDATE(),
+    createdAt DATETIME DEFAULT GETDATE(),
+    FOREIGN KEY (sourceId) REFERENCES MoneySources(id)
+  );
+END;
+GO
+
+
+
 -- Example seed with JSON payloads
 INSERT INTO BusinessDomains (id, title, summary, quickLinks, contentJson, displayOrder)
 VALUES (
@@ -87,4 +136,16 @@ VALUES (
   N'{}',
   1
 );
+
+  ALTER TABLE Orders ADD paymentMethod NVARCHAR(50);
+  ALTER TABLE Orders ADD transactionCode NVARCHAR(100);
+    ALTER TABLE Users ADD isAdmin BIT NOT NULL DEFAULT 0;
+USE MultisectorHoldings;
+GO
+
+UPDATE Users
+SET isAdmin = 1
+WHERE username = N'Xuan loc';   -- hoặc WHERE phone = '0862317046';
+
+
 
