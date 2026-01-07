@@ -2,8 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const contentRoutes = require('./routes/contentRoutes');
 const authRoutes = require('./routes/authRoutes');
-const orderRoutes = require('./routes/orderRoutes');
-const adminRoutes = require('./routes/adminRoutes');
+const productRoutes = require('./routes/productRoutes');
 
 const app = express();
 
@@ -20,8 +19,7 @@ app.get('/api/health', (req, res) =>
 
 app.use('/api', contentRoutes);
 app.use('/api/auth', authRoutes);
-app.use('/api/orders', orderRoutes);
-app.use('/api/admin', adminRoutes);
+app.use('/api/products', productRoutes);
 
 app.use((err, req, res, next) => {
   // eslint-disable-next-line no-console

@@ -1,22 +1,19 @@
 const { Router } = require('express');
 const { body } = require('express-validator');
 const {
-  getHome,
-  getAbout,
   getDomains,
   getDomainById,
   getBlog,
   submitContact
 } = require('../controllers/contentController');
+const { getBlogPost } = require('../controllers/blogController');
 const { validate } = require('../utils/validator');
 
 const router = Router();
-
-router.get('/home', getHome);
-router.get('/about', getAbout);
 router.get('/domains', getDomains);
 router.get('/domains/:domainId', getDomainById);
 router.get('/blog', getBlog);
+router.get('/blog/:id', getBlogPost);
 
 router.post(
   '/contact',

@@ -1,364 +1,416 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import {
-  fetchUsers,
-  fetchMoneySources,
-  createMoneySource,
-  updateMoneySource,
-  deleteMoneySource,
-  fetchDailyReport,
-  type MoneySource,
-  type DailyReport
-} from '../services/adminApi';
-
-type TabKey = 'users' | 'sources' | 'report';
-
-// Helper function để format ngày tháng theo timezone Việt Nam
-function formatDateTime(dateString: string): string {
-  try {
-    const date = new Date(dateString);
-    // Kiểm tra nếu date không hợp lệ
-    if (isNaN(date.getTime())) {
-      return dateString; // Trả về nguyên bản nếu không parse được
-    }
-    return date.toLocaleString('vi-VN', {
-      timeZone: 'Asia/Ho_Chi_Minh',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false
-    });
-  } catch (err) {
-    console.error('Error formatting date:', err, dateString);
-    return dateString;
-  }
-}
+import api from '../services/baseApi';
+import { fetchProducts, type Product } from '../services/api';
+import { AlertDialog, ConfirmDialog } from '../components/Modal';
 
 export default function AdminDashboard() {
-  const { isAuthenticated, user, isLoading } = useAuth();
+  const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<number | null>(null);
+  const [showAlert, setShowAlert] = useState(false);
+  const [alertMessage, setAlertMessage] = useState('');
+  const [alertType, setAlertType] = useState<'success' | 'error'>('success');
 
-  // Tất cả hooks phải được gọi trước khi có early return
-  const [activeTab, setActiveTab] = useState<TabKey>('users');
-  const [users, setUsers] = useState<any[]>([]);
-  const [sources, setSources] = useState<MoneySource[]>([]);
-  const [reportDate, setReportDate] = useState<string>(() => {
-    return new Date().toISOString().slice(0, 10);
-  });
-  const [report, setReport] = useState<DailyReport | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
-
-  const [sourceForm, setSourceForm] = useState<{ id?: number; name: string; description: string }>({
+  // Form state
+  const [formData, setFormData] = useState({
     name: '',
-    description: ''
+    description: '',
+    price: '',
+    category: 'Sâm',
+    imageUrl: '',
+    inventory: '0',
+    isFeatured: false,
+    isPromotion: false,
+    promotionPrice: '',
+    status: 'active'
   });
 
-  // Kiểm tra quyền admin
   useEffect(() => {
-    if (!isLoading) {
-      if (!isAuthenticated || !user) {
-        navigate('/dang-nhap');
-        return;
-      }
-      if (!user.isAdmin) {
-        navigate('/');
-        return;
-      }
+    // ProtectedRoute component will handle redirect, but we still check here for safety
+    if (!isAuthenticated || !user?.isAdmin) {
+      return;
     }
-  }, [isAuthenticated, user, isLoading, navigate]);
+    loadProducts();
+  }, [isAuthenticated, user]);
 
-  // Hiển thị loading hoặc không hiển thị gì nếu chưa xác nhận quyền
-  if (isLoading || !isAuthenticated || !user || !user.isAdmin) {
-    return null;
-  }
-
-  useEffect(() => {
-    if (!isAuthenticated) return;
-    loadUsers();
-    loadSources();
-    loadReport(reportDate);
-  }, [isAuthenticated]);
-
-  async function loadUsers() {
-    try {
-      const data = await fetchUsers();
-      setUsers(data);
-    } catch (err) {
-      console.error(err);
-    }
-  }
-
-  async function loadSources() {
-    try {
-      const data = await fetchMoneySources();
-      setSources(data);
-    } catch (err) {
-      console.error(err);
-    }
-  }
-
-  async function loadReport(dateIso: string) {
+  const loadProducts = async () => {
     try {
       setLoading(true);
-      const data = await fetchDailyReport(dateIso);
-      setReport(data);
-      setErrorMessage('');
-    } catch (err: any) {
-      console.error(err);
-      setErrorMessage('Không thể tải báo cáo ngày');
+      const data = await fetchProducts();
+      setProducts(data);
+    } catch (err) {
+      showAlertMessage('Không thể tải danh sách sản phẩm', 'error');
     } finally {
       setLoading(false);
     }
-  }
+  };
 
-  async function handleSaveSource(e: React.FormEvent) {
+  const showAlertMessage = (message: string, type: 'success' | 'error' = 'success') => {
+    setAlertMessage(message);
+    setAlertType(type);
+    setShowAlert(true);
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      description: '',
+      price: '',
+      category: 'Sâm',
+      imageUrl: '',
+      inventory: '0',
+      isFeatured: false,
+      isPromotion: false,
+      promotionPrice: '',
+      status: 'active'
+    });
+    setEditingProduct(null);
+  };
+
+  const handleEdit = (product: Product) => {
+    setEditingProduct(product);
+    setFormData({
+      name: product.name,
+      description: product.description || '',
+      price: product.price.toString(),
+      category: product.category,
+      imageUrl: product.imageUrl || '',
+      inventory: product.inventory.toString(),
+      isFeatured: product.isFeatured,
+      isPromotion: product.isPromotion,
+      promotionPrice: product.promotionPrice?.toString() || '',
+      status: product.status
+    });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!sourceForm.name.trim()) return;
-
     try {
-      if (sourceForm.id) {
-        const updated = await updateMoneySource(sourceForm.id, {
-          name: sourceForm.name.trim(),
-          description: sourceForm.description.trim()
-        });
-        setSources((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
+      const payload = {
+        name: formData.name,
+        description: formData.description || undefined,
+        price: parseFloat(formData.price),
+        category: formData.category,
+        imageUrl: formData.imageUrl || undefined,
+        inventory: parseInt(formData.inventory) || 0,
+        isFeatured: formData.isFeatured,
+        isPromotion: formData.isPromotion,
+        promotionPrice: formData.isPromotion && formData.promotionPrice 
+          ? parseFloat(formData.promotionPrice) 
+          : undefined,
+        status: formData.status
+      };
+
+      if (editingProduct) {
+        await api.put(`/products/${editingProduct.id}`, payload);
+        showAlertMessage('Cập nhật sản phẩm thành công!');
       } else {
-        const created = await createMoneySource({
-          name: sourceForm.name.trim(),
-          description: sourceForm.description.trim()
-        });
-        setSources((prev) => [created, ...prev]);
+        await api.post('/products', payload);
+        showAlertMessage('Thêm sản phẩm thành công!');
       }
 
-      setSourceForm({ id: undefined, name: '', description: '' });
-    } catch (err) {
-      console.error(err);
-      alert('Không thể lưu nguồn tiền');
+      resetForm();
+      loadProducts();
+    } catch (err: any) {
+      const message = err.response?.data?.message || 'Có lỗi xảy ra';
+      showAlertMessage(message, 'error');
     }
-  }
+  };
 
-  async function handleDeleteSource(id: number) {
-    if (!window.confirm('Bạn có chắc muốn xóa nguồn tiền này?')) return;
+  const handleDelete = async () => {
+    if (!productToDelete) return;
+
     try {
-      await deleteMoneySource(id);
-      setSources((prev) => prev.filter((s) => s.id !== id));
-    } catch (err) {
-      console.error(err);
-      alert('Không thể xóa nguồn tiền (có thể đang được dùng trong dòng tiền).');
+      await api.delete(`/products/${productToDelete}`);
+      showAlertMessage('Xóa sản phẩm thành công!');
+      setShowDeleteConfirm(false);
+      setProductToDelete(null);
+      loadProducts();
+    } catch (err: any) {
+      const message = err.response?.data?.message || 'Có lỗi xảy ra';
+      showAlertMessage(message, 'error');
+      setShowDeleteConfirm(false);
+      setProductToDelete(null);
     }
-  }
+  };
 
-  if (!isAuthenticated) {
-    return (
-      <div className="admin">
-        <h1>Admin</h1>
-        <p>Vui lòng đăng nhập để truy cập trang quản trị.</p>
-      </div>
-    );
+  // ProtectedRoute will handle redirect, but show loading if not authenticated
+  if (!isAuthenticated || !user?.isAdmin) {
+    return <div style={{ padding: '2rem', textAlign: 'center' }}>Đang kiểm tra quyền truy cập...</div>;
   }
 
   return (
-    <div className="admin">
-      <h1>Admin Dashboard</h1>
+    <>
+      <div className="admin">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+          <h1>Quản lý Sản phẩm</h1>
+          <button className="btn btn--secondary" onClick={() => { logout(); navigate('/'); }}>
+            Đăng xuất
+          </button>
+        </div>
 
-      <div className="admin__tabs">
-        <button
-          type="button"
-          className={activeTab === 'users' ? 'admin__tab admin__tab--active' : 'admin__tab'}
-          onClick={() => setActiveTab('users')}
-        >
-          Tài khoản
-        </button>
-        <button
-          type="button"
-          className={activeTab === 'sources' ? 'admin__tab admin__tab--active' : 'admin__tab'}
-          onClick={() => setActiveTab('sources')}
-        >
-          Nguồn tiền
-        </button>
-        <button
-          type="button"
-          className={activeTab === 'report' ? 'admin__tab admin__tab--active' : 'admin__tab'}
-          onClick={() => setActiveTab('report')}
-        >
-          Báo cáo ngày
-        </button>
-      </div>
-
-      {activeTab === 'users' && (
-        <section className="admin__panel">
-          <h2>Danh sách tài khoản</h2>
-          <p>Đây là danh sách các tài khoản người dùng. (Tạo tài khoản qua trang đăng ký.)</p>
-          <div className="admin__table-wrapper">
-            <table className="admin__table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Tên đăng nhập</th>
-                  <th>Số điện thoại</th>
-                  <th>Địa chỉ</th>
-                  <th>Vai trò</th>
-                  <th>Ngày tạo</th>
-                </tr>
-              </thead>
-              <tbody>
-                {users.map((user) => (
-                  <tr key={user.id}>
-                    <td>{user.id}</td>
-                    <td>{user.username}</td>
-                    <td>{user.phone}</td>
-                    <td>{user.address}</td>
-                    <td>
-                      <span
-                        className={
-                          user.isAdmin
-                            ? 'admin__role-badge admin__role-badge--admin'
-                            : 'admin__role-badge admin__role-badge--user'
-                        }
-                      >
-                        {user.isAdmin ? 'Admin' : 'User'}
-                      </span>
-                    </td>
-                    <td>{formatDateTime(user.createdAt)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      )}
-
-      {activeTab === 'sources' && (
-        <section className="admin__panel">
-          <h2>Nguồn tiền</h2>
-          <form className="admin__form" onSubmit={handleSaveSource}>
+        <div className="admin__panel">
+          <h2>{editingProduct ? 'Sửa sản phẩm' : 'Thêm sản phẩm mới'}</h2>
+          <form className="admin__form" onSubmit={handleSubmit}>
             <div className="admin__form-row">
               <label>
-                Tên nguồn tiền
+                Tên sản phẩm *
                 <input
-                  name="name"
-                  value={sourceForm.name}
-                  onChange={(e) => setSourceForm((prev) => ({ ...prev, name: e.target.value }))}
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   required
                 />
               </label>
               <label>
-                Mô tả
-                <input
-                  name="description"
-                  value={sourceForm.description}
-                  onChange={(e) =>
-                    setSourceForm((prev) => ({ ...prev, description: e.target.value }))
-                  }
-                />
+                Danh mục *
+                <select
+                  value={formData.category}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  required
+                  style={{ padding: '0.65rem 0.8rem', borderRadius: '10px', border: '1px solid rgba(15, 40, 75, 0.2)' }}
+                >
+                  <option value="Sâm">Sâm</option>
+                  <option value="Mỹ phẩm">Mỹ phẩm</option>
+                </select>
               </label>
             </div>
-            <button type="submit" className="btn btn--primary">
-              {sourceForm.id ? 'Cập nhật nguồn tiền' : 'Thêm nguồn tiền'}
-            </button>
-          </form>
 
-          <div className="admin__table-wrapper">
-            <table className="admin__table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Tên nguồn tiền</th>
-                  <th>Mô tả</th>
-                  <th>Ngày tạo</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {sources.map((source) => (
-                  <tr key={source.id}>
-                    <td>{source.id}</td>
-                    <td>{source.name}</td>
-                    <td>{source.description}</td>
-                    <td>{formatDateTime(source.createdAt)}</td>
-                    <td>
-                      <button
-                        type="button"
-                        className="admin__link-button"
-                        onClick={() =>
-                          setSourceForm({
-                            id: source.id,
-                            name: source.name,
-                            description: source.description || ''
-                          })
-                        }
-                      >
-                        Sửa
-                      </button>
-                      <button
-                        type="button"
-                        className="admin__link-button admin__link-button--danger"
-                        onClick={() => handleDeleteSource(source.id)}
-                      >
-                        Xóa
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      )}
-
-      {activeTab === 'report' && (
-        <section className="admin__panel">
-          <h2>Báo cáo thu chi theo ngày</h2>
-          <div className="admin__filter-row">
             <label>
-              Chọn ngày
-              <input
-                type="date"
-                value={reportDate}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setReportDate(value);
-                  loadReport(value);
-                }}
+              Mô tả
+              <textarea
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                rows={3}
+                style={{ padding: '0.65rem 0.8rem', borderRadius: '10px', border: '1px solid rgba(15, 40, 75, 0.2)', fontFamily: 'inherit' }}
               />
             </label>
-          </div>
 
-          {loading && <p>Đang tải báo cáo...</p>}
-          {errorMessage && <p className="admin__error">{errorMessage}</p>}
+            <div className="admin__form-row">
+              <label>
+                Giá (₫) *
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.price}
+                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                  required
+                />
+              </label>
+              <label>
+                Tồn kho
+                <input
+                  type="number"
+                  min="0"
+                  value={formData.inventory}
+                  onChange={(e) => setFormData({ ...formData, inventory: e.target.value })}
+                />
+              </label>
+              <label>
+                Trạng thái
+                <select
+                  value={formData.status}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                  style={{ padding: '0.65rem 0.8rem', borderRadius: '10px', border: '1px solid rgba(15, 40, 75, 0.2)' }}
+                >
+                  <option value="active">Hoạt động</option>
+                  <option value="inactive">Ngừng bán</option>
+                  <option value="out_of_stock">Hết hàng</option>
+                </select>
+              </label>
+            </div>
 
-          {report && !loading && (
-            <div className="admin__report">
-              <div className="admin__report-cards">
-                <div className="admin__report-card admin__report-card--income">
-                  <h3>Tổng thu</h3>
-                  <p>{report.totalIncome.toLocaleString('vi-VN')} ₫</p>
-                  <small>
-                    Bán hàng: {report.ordersIncome.toLocaleString('vi-VN')} ₫ + Thu khác:{' '}
-                    {report.cashIn.toLocaleString('vi-VN')} ₫
-                  </small>
-                </div>
-                <div className="admin__report-card admin__report-card--expense">
-                  <h3>Tổng chi</h3>
-                  <p>{report.totalExpense.toLocaleString('vi-VN')} ₫</p>
-                  <small>Chi khác: {report.cashOut.toLocaleString('vi-VN')} ₫</small>
-                </div>
-                <div className="admin__report-card admin__report-card--net">
-                  <h3>Lãi / Lỗ</h3>
-                  <p>{report.net.toLocaleString('vi-VN')} ₫</p>
-                </div>
-              </div>
+            <label>
+              URL hình ảnh
+              <input
+                type="url"
+                value={formData.imageUrl}
+                onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+                placeholder="https://example.com/image.jpg"
+              />
+            </label>
+
+            <div className="admin__form-row">
+              <label style={{ flexDirection: 'row', alignItems: 'center', gap: '0.5rem' }}>
+                <input
+                  type="checkbox"
+                  checked={formData.isFeatured}
+                  onChange={(e) => setFormData({ ...formData, isFeatured: e.target.checked })}
+                />
+                <span>Sản phẩm nổi bật</span>
+              </label>
+              <label style={{ flexDirection: 'row', alignItems: 'center', gap: '0.5rem' }}>
+                <input
+                  type="checkbox"
+                  checked={formData.isPromotion}
+                  onChange={(e) => setFormData({ ...formData, isPromotion: e.target.checked })}
+                />
+                <span>Đang khuyến mãi</span>
+              </label>
+            </div>
+
+            {formData.isPromotion && (
+              <label>
+                Giá khuyến mãi (₫)
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.promotionPrice}
+                  onChange={(e) => setFormData({ ...formData, promotionPrice: e.target.value })}
+                />
+              </label>
+            )}
+
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <button type="submit" className="btn btn--primary">
+                {editingProduct ? 'Cập nhật' : 'Thêm sản phẩm'}
+              </button>
+              {editingProduct && (
+                <button type="button" className="btn btn--secondary" onClick={resetForm}>
+                  Hủy
+                </button>
+              )}
+            </div>
+          </form>
+        </div>
+
+        <div className="admin__panel" style={{ marginTop: '2rem' }}>
+          <h2>Danh sách sản phẩm</h2>
+          {loading ? (
+            <p>Đang tải...</p>
+          ) : products.length === 0 ? (
+            <p>Chưa có sản phẩm nào</p>
+          ) : (
+            <div className="admin__table-wrapper">
+              <table className="admin__table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Hình ảnh</th>
+                    <th>Tên sản phẩm</th>
+                    <th>Danh mục</th>
+                    <th>Giá</th>
+                    <th>Tồn kho</th>
+                    <th>Trạng thái</th>
+                    <th>Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {products.map((product) => (
+                    <tr key={product.id}>
+                      <td>{product.id}</td>
+                      <td>
+                        {product.imageUrl ? (
+                          <img
+                            src={product.imageUrl}
+                            alt={product.name}
+                            style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '8px' }}
+                          />
+                        ) : (
+                          <span style={{ color: '#6d7685' }}>Chưa có</span>
+                        )}
+                      </td>
+                      <td>{product.name}</td>
+                      <td>{product.category}</td>
+                      <td>
+                        {product.isPromotion && product.promotionPrice ? (
+                          <>
+                            <span style={{ textDecoration: 'line-through', color: '#6d7685', fontSize: '0.85rem' }}>
+                              {product.price.toLocaleString('vi-VN')} ₫
+                            </span>
+                            <br />
+                            <span style={{ color: '#d7263d', fontWeight: '600' }}>
+                              {product.promotionPrice.toLocaleString('vi-VN')} ₫
+                            </span>
+                          </>
+                        ) : (
+                          <span>{product.price.toLocaleString('vi-VN')} ₫</span>
+                        )}
+                      </td>
+                      <td>{product.inventory}</td>
+                      <td>
+                        <span
+                          style={{
+                            padding: '0.25rem 0.75rem',
+                            borderRadius: '12px',
+                            fontSize: '0.85rem',
+                            backgroundColor:
+                              product.status === 'active'
+                                ? '#f0fdf4'
+                                : product.status === 'out_of_stock'
+                                ? '#fff5f5'
+                                : '#f6f7fb',
+                            color:
+                              product.status === 'active'
+                                ? '#0b8457'
+                                : product.status === 'out_of_stock'
+                                ? '#d7263d'
+                                : '#6d7685'
+                          }}
+                        >
+                          {product.status === 'active'
+                            ? 'Hoạt động'
+                            : product.status === 'out_of_stock'
+                            ? 'Hết hàng'
+                            : 'Ngừng bán'}
+                        </span>
+                      </td>
+                      <td>
+                        <button
+                          className="admin__link-button"
+                          onClick={() => handleEdit(product)}
+                        >
+                          Sửa
+                        </button>
+                        <button
+                          className="admin__link-button admin__link-button--danger"
+                          onClick={() => {
+                            setProductToDelete(product.id);
+                            setShowDeleteConfirm(true);
+                          }}
+                        >
+                          Xóa
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
-        </section>
-      )}
-    </div>
+        </div>
+      </div>
+
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        onClose={() => {
+          setShowDeleteConfirm(false);
+          setProductToDelete(null);
+        }}
+        onConfirm={handleDelete}
+        title="Xác nhận xóa"
+        message="Bạn có chắc chắn muốn xóa sản phẩm này?"
+        confirmText="Xóa"
+        cancelText="Hủy"
+        type="danger"
+      />
+
+      <AlertDialog
+        isOpen={showAlert}
+        onClose={() => setShowAlert(false)}
+        message={alertMessage}
+        type={alertType}
+        confirmText="Đóng"
+      />
+    </>
   );
 }
-
 

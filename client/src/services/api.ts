@@ -1,45 +1,12 @@
 import api from './baseApi';
 import {
-  heroContent as heroFallback,
-  missionContent as missionFallback,
-  newsHighlights as newsFallback,
-  aboutContent as aboutFallback,
   businessDomains as domainFallback,
   blogPosts as blogFallback
 } from '../data/mockContent';
 import type {
-  AboutContent,
-  AuthResponse,
   BlogPost,
-  BusinessDomain,
-  HeroContent,
-  MissionContent,
-  NewsItem
+  BusinessDomain
 } from '../types/content';
-
-type HomeResponse = {
-  hero: HeroContent;
-  mission: MissionContent;
-  news: NewsItem[];
-};
-
-export async function fetchHome(): Promise<HomeResponse> {
-  try {
-    const { data } = await api.get<{ data: HomeResponse }>('/home');
-    return data.data;
-  } catch (err) {
-    return { hero: heroFallback, mission: missionFallback, news: newsFallback };
-  }
-}
-
-export async function fetchAbout(): Promise<AboutContent> {
-  try {
-    const { data } = await api.get<{ data: AboutContent }>('/about');
-    return data.data;
-  } catch (err) {
-    return aboutFallback;
-  }
-}
 
 export async function fetchDomains(): Promise<BusinessDomain[]> {
   try {
@@ -63,6 +30,16 @@ export async function fetchBlog(category?: string): Promise<BlogPost[]> {
   }
 }
 
+export async function fetchBlogPost(id: string): Promise<BlogPost & { content?: string } | null> {
+  try {
+    const { data } = await api.get<{ data: BlogPost & { content?: string } }>(`/blog/${id}`);
+    return data.data;
+  } catch (err) {
+    console.error('Error fetching blog post:', err);
+    return null;
+  }
+}
+
 export async function submitContact(payload: {
   fullName: string;
   email: string;
@@ -72,94 +49,47 @@ export async function submitContact(payload: {
   return api.post('/contact', payload);
 }
 
-export async function register(payload: {
-  username: string;
-  phone: string;
-  address: string;
-  password: string;
-  confirmPassword: string;
-}): Promise<AuthResponse> {
+// Products API (public)
+export type Product = {
+  id: number;
+  name: string;
+  description?: string | null;
+  price: number;
+  category: string;
+  imageUrl?: string | null;
+  inventory: number;
+  isFeatured: boolean;
+  isPromotion: boolean;
+  promotionPrice?: number | null;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export async function fetchProducts(params?: {
+  category?: string;
+  status?: string;
+  featured?: boolean;
+}): Promise<Product[]> {
   try {
-    const response = await api.post<{ success: boolean; data: AuthResponse }>('/auth/register', payload);
-    const { data } = response;
-    
-    if (data.success && data.data) {
-      return data.data;
-    }
-    throw new Error('Invalid response format');
-  } catch (err: any) {
-    // Đảm bảo error response được giữ nguyên để component xử lý
-    if (err.response) {
-      // Server trả về error response (422, 500, etc.)
-      throw err;
-    }
-    // Network error hoặc lỗi khác
-    throw err;
+    const { data } = await api.get<{ success: boolean; data: { products: Product[] } }>(
+      '/products',
+      { params }
+    );
+    return data.data.products;
+  } catch (err) {
+    console.error('Error fetching products:', err);
+    return [];
   }
 }
 
-export async function login(payload: {
-  username: string;
-  password: string;
-}): Promise<AuthResponse> {
+export async function fetchProduct(id: number): Promise<Product | null> {
   try {
-    const response = await api.post<{ success: boolean; data: AuthResponse }>('/auth/login', payload);
-    const { data } = response;
-    
-    if (data.success && data.data) {
+    const { data } = await api.get<{ success: boolean; data: Product }>(`/products/${id}`);
       return data.data;
-    }
-    throw new Error('Invalid response format');
-  } catch (err: any) {
-    // Đảm bảo error response được giữ nguyên để component xử lý
-    if (err.response) {
-      // Server trả về error response (401, 422, 500, etc.)
-      throw err;
-    }
-    // Network error hoặc lỗi khác
-    throw err;
-  }
-}
-
-export async function checkout(payload: {
-  userId: number;
-  items: Array<{
-    productId: string;
-    productName: string;
-    price: number;
-    quantity: number;
-  }>;
-  total: number;
-  paymentMethod?: string;
-  transactionCode?: string;
-}) {
-  try {
-    const response = await api.post<{ success: boolean; data: { orderId: number; status: string; qrCode?: string } }>('/orders', payload);
-    const { data } = response;
-    
-    if (data.success && data.data) {
-      return data.data;
-    }
-    throw new Error('Invalid response format');
-  } catch (err: any) {
-    throw err;
-  }
-}
-
-export async function confirmPayment(orderId: number, transactionCode: string) {
-  try {
-    const response = await api.post<{ success: boolean; data: { orderId: number; status: string } }>('/orders/confirm', {
-      orderId,
-      transactionCode
-    });
-    const { data } = response;
-    
-    if (data.success && data.data) {
-      return data.data;
-    }
-    throw new Error('Invalid response format');
-  } catch (err: any) {
-    throw err;
+  } catch (err) {
+    console.error('Error fetching product:', err);
+    return null;
   }
 }
 

@@ -1,88 +1,74 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import type { AuthUser } from '../types/content';
+import { createContext, useContext, useState, useEffect } from 'react';
+import type { ReactNode } from 'react';
+
+interface User {
+  id: number;
+  username: string;
+  phone: string;
+  address: string;
+  isAdmin: boolean;
+}
 
 interface AuthContextType {
-  user: AuthUser | null;
+  user: User | null;
   isAuthenticated: boolean;
-  isLoading: boolean;
-  login: (userData: AuthUser, token: string) => void;
+  login: (username: string, password: string) => Promise<void>;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    // Load user từ localStorage khi component mount
-    const loadUser = () => {
-      try {
-        const userStr = localStorage.getItem('auth_user');
-        const token = localStorage.getItem('auth_token');
-        
-        if (userStr && token) {
-          const userData = JSON.parse(userStr);
-          setUser(userData);
-        } else {
-          setUser(null);
-        }
-      } catch (err) {
-        console.error('Error loading user from localStorage:', err);
-        setUser(null);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadUser();
-
-    // Listen for storage changes (khi đăng nhập/đăng xuất ở tab khác)
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'auth_user' || e.key === 'auth_token') {
-        loadUser();
-      }
-    };
-
-    // Listen for custom event (khi đăng nhập/đăng xuất trong cùng tab)
-    const handleAuthChange = () => {
-      loadUser();
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('auth-change', handleAuthChange);
+    // Check if user is logged in from localStorage
+    const token = localStorage.getItem('auth_token');
+    const userData = localStorage.getItem('auth_user');
     
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('auth-change', handleAuthChange);
-    };
+    if (token && userData) {
+      try {
+        setUser(JSON.parse(userData));
+      } catch (err) {
+        console.error('Error parsing user data:', err);
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('auth_user');
+      }
+    }
   }, []);
 
-  const login = (userData: AuthUser, token: string) => {
-    localStorage.setItem('auth_user', JSON.stringify(userData));
-    localStorage.setItem('auth_token', token);
-    setUser(userData);
-    // Dispatch custom event để notify các components khác
-    window.dispatchEvent(new Event('auth-change'));
+  const login = async (username: string, password: string) => {
+    const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:4000/api'}/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ username, password })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || 'Đăng nhập thất bại');
+    }
+
+    // Save token and user data
+    localStorage.setItem('auth_token', data.data.token);
+    localStorage.setItem('auth_user', JSON.stringify(data.data.user));
+    setUser(data.data.user);
   };
 
   const logout = () => {
-    localStorage.removeItem('auth_user');
     localStorage.removeItem('auth_token');
+    localStorage.removeItem('auth_user');
     setUser(null);
-    // Dispatch custom event để notify các components khác
-    window.dispatchEvent(new Event('auth-change'));
   };
-
-  const isAuthenticated = !!user;
 
   return (
     <AuthContext.Provider
       value={{
         user,
-        isAuthenticated,
-        isLoading,
+        isAuthenticated: !!user,
         login,
         logout
       }}

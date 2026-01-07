@@ -1,186 +1,79 @@
-import { useCallback, useRef, useState } from 'react';
-import { useCart } from '../contexts/CartContext';
-import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { AlertDialog, ConfirmDialog } from '../components/Modal';
-import boneImage from '../img/Viên bổ xương khớp.png';
-import ginsengExtractImage from '../img/tinh chất hồng sâm.jpg';
-import freshGinsengImage from '../img/nhân sâm tươi hàn quốc.jpg';
-import ginseng365Image from '../img/cao-hong-sam-han-quoc-365-moi-2-lo-tang-keo-hong-sam.jpg';
+import SectionHeading from '../components/SectionHeading';
+import { ginsengProducts } from '../data/ginsengProducts';
 
-const products = [
-  {
-    id: 'gs-001',
-    name: 'Viên bổ xương khớp',
-    price: 350000,
-    image: boneImage,
-    description: 'Hỗ trợ sức khỏe xương khớp, giảm đau nhức, tăng cường sự linh hoạt'
-  },
-  {
-    id: 'gs-002',
-    name: 'Tinh chất hồng sâm',
-    price: 1200000,
-    image: ginsengExtractImage,
-    description: 'Tinh chất hồng sâm Hàn Quốc cao cấp, tăng cường sức khỏe và sinh lực'
-  },
-  {
-    id: 'gs-003',
-    name: 'Nhân sâm tươi Hàn Quốc',
-    price: 2500000,
-    image: freshGinsengImage,
-    description: 'Nhân sâm tươi 6 năm tuổi, chất lượng cao, nguyên liệu tươi ngon'
-  },
-  {
-    id: 'gs-004',
-    name: 'Cao hồng sâm Hàn Quốc 365',
-    price: 1800000,
-    image: ginseng365Image,
-    description: 'Cao hồng sâm đóng hộp, tiện lợi, bổ dưỡng, tăng cường miễn dịch'
-  }
-];
+// Import images using import.meta.glob to handle files with special characters
+const images = import.meta.glob('../img/sam han quoc/*.png', { eager: true, as: 'url' }) as Record<string, string>;
+
+// Helper function to get image by filename
+const getImage = (filename: string): string => {
+  const path = `../img/sam han quoc/${filename}`;
+  return images[path] || '';
+};
+
+const imageMap: Record<string, string> = {
+  'nam-linh-chi-sung-huou-dau-mua': getImage('Nấm linh chi Sừng hươu đầu mùa.png'),
+  'tinh-dau-thong-do-han-quoc-kwangdong': getImage('TINH DẦU THÔNG ĐỎ HÀN QUỐC KwangDong.png'),
+  'chiet-suat-dong-trung-ha-thao-hop-60-goi': getImage('Chiết suất đông trùng hạ thảo hộp 60 gói cao cấp.png'),
+  'tinh-chat-hong-sam-mat-ong-pha-san-kgc-honey-paste': getImage('Tinh Chất Hồng Sâm Mật Ong Pha Sẵn KGC  Honey Paste (Hộp 30 gói).png'),
+  'kgc-hong-sam-tonic-mild': getImage('KGC - Hồng sâm Tonic mild date 11-2028.png'),
+  'dong-trung-ha-thao-nuoc-go-vang-60-goi': getImage('ĐÔNG TRÙNG HẠ THẢO NƯỚC GỖ VÀNG 60 GÓI.png'),
+  'an-cung-nguu-hoang-hoan-dong-nhan-duong': getImage('An Cung Ngưu Hoàng Hoàn Đồng Nhân Đường.png'),
+  'tinh-chat-dong-trung-sam-nui-cao-cap-han-quoc': getImage('TINH CHẤT ĐÔNG TRÙNG – SÂM NÚI CAO CẤP HÀN QUỐC.png'),
+  'cao-sam-hoang-hau-han-quoc': getImage('CAO SÂM HOÀNG HẬU HÀN QUỐC(1).png'),
+  'bo-nao-tram-huong-samsung-jangsoo-hwam': getImage('Bổ não trầm hương samsung jangsoo hwam.png'),
+  'an-cung-rong-vang-daehan-jinbodan': getImage('AN CUNG RỒNG VÀNG DAEHAN JINBODAN.png'),
+  'vien-uong-duong-nao-ong-quan': getImage('Viên uống dưỡng não ông quan.png')
+};
 
 export default function GinsengPage() {
-  const { addToCart } = useCart();
-  const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const processingRef = useRef<{ [key: string]: boolean }>({});
-  
-  const [showLoginConfirm, setShowLoginConfirm] = useState(false);
-  const [showSuccessAlert, setShowSuccessAlert] = useState(false);
-  const [showErrorAlert, setShowErrorAlert] = useState(false);
-  const [alertMessage, setAlertMessage] = useState('');
 
-  const handleAddToCart = useCallback((product: typeof products[0]) => {
-    // Check if user is authenticated
-    if (!isAuthenticated) {
-      setAlertMessage('');
-      setShowLoginConfirm(true);
-      return;
-    }
-
-    // Prevent double click for this specific product
-    if (processingRef.current[product.id]) {
-      console.log('handleAddToCart: Already processing for product', product.id);
-      return;
-    }
-
-    try {
-      processingRef.current[product.id] = true;
-      console.log('Adding to cart:', product);
-      
-      // Convert image to string if it's an imported module
-      const imageUrl = typeof product.image === 'string' 
-        ? product.image 
-        : (product.image as any)?.src || (product.image as any)?.default || String(product.image);
-      
-      addToCart({
-        id: product.id,
-        name: product.name,
-        price: product.price,
-        image: imageUrl,
-        description: product.description
-      });
-      
-      // Show success message
-      setShowSuccessAlert(true);
-      
-      // Reset processing flag after delay
-      setTimeout(() => {
-        processingRef.current[product.id] = false;
-      }, 1000);
-    } catch (err) {
-      console.error('Error adding to cart:', err);
-      processingRef.current[product.id] = false;
-      const errorMessage = (err as Error).message;
-      if (errorMessage.includes('đăng nhập')) {
-        setAlertMessage(errorMessage);
-        setShowLoginConfirm(true);
-      } else {
-        setAlertMessage('Có lỗi xảy ra khi thêm sản phẩm vào giỏ hàng: ' + errorMessage);
-        setShowErrorAlert(true);
-      }
-    }
-  }, [addToCart, isAuthenticated]);
+  const handleProductClick = (productId: string) => {
+    navigate(`/san-pham/nhan-sam-han-quoc/${productId}`);
+  };
 
   return (
-    <>
-      <div className="product-page">
-        <div className="section-heading section-heading--center">
-          <h1>Nhân sâm Hàn Quốc</h1>
-          <p className="section-heading__description">
-            Sản phẩm nhân sâm Hàn Quốc chính hãng, chất lượng cao
-          </p>
-        </div>
+    <div className="product-page">
+      <SectionHeading
+        eyebrow="Nhân sâm Hàn Quốc"
+        title="Sản phẩm nhân sâm Hàn Quốc chính hãng"
+        description="Các sản phẩm nhân sâm, hồng sâm và thực phẩm chức năng cao cấp từ Hàn Quốc"
+        align="center"
+      />
 
-        <div className="product-grid">
-          {products.map((product) => (
-            <div key={product.id} className="product-card">
-              <div className="product-card__image">
-                <img src={product.image} alt={product.name} />
-              </div>
-              <div className="product-card__content">
-                <h3 className="product-card__name">{product.name}</h3>
-                {product.description && (
-                  <p className="product-card__description">{product.description}</p>
-                )}
-                <div className="product-card__footer">
-                  <div className="product-card__price">
-                    {product.price.toLocaleString('vi-VN')} ₫
-                  </div>
-                  <button
-                    type="button"
-                    className="btn btn--primary product-card__add-btn"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleAddToCart(product);
-                    }}
-                  >
-                    Thêm vào giỏ
-                  </button>
-                </div>
+      <div className="product-grid">
+        {ginsengProducts.map((product) => (
+          <div
+            key={product.id}
+            className="product-card"
+            onClick={() => handleProductClick(product.id)}
+            style={{ cursor: 'pointer' }}
+          >
+            <div className="product-card__image">
+              <img
+                src={imageMap[product.id] || product.image}
+                alt={product.name}
+              />
+            </div>
+            <div className="product-card__content">
+              <h3 className="product-card__name">{product.name}</h3>
+              <p className="product-card__description">{product.description}</p>
+              <div className="product-card__footer">
+                <button
+                  className="product-card__detail-link"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleProductClick(product.id);
+                  }}
+                >
+                  Xem chi tiết
+                </button>
               </div>
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
       </div>
-
-      {/* Login Confirm Dialog */}
-      <ConfirmDialog
-        isOpen={showLoginConfirm}
-        onClose={() => {
-          setShowLoginConfirm(false);
-          setAlertMessage('');
-        }}
-        onConfirm={() => {
-          setShowLoginConfirm(false);
-          setAlertMessage('');
-          navigate('/dang-nhap');
-        }}
-        title="Yêu cầu đăng nhập"
-        message={alertMessage || 'Bạn cần đăng nhập để thêm sản phẩm vào giỏ hàng. Bạn có muốn đăng nhập ngay không?'}
-        confirmText="Đăng nhập"
-        cancelText="Hủy"
-        type="info"
-      />
-
-      {/* Success Alert */}
-      <AlertDialog
-        isOpen={showSuccessAlert}
-        onClose={() => setShowSuccessAlert(false)}
-        message="Đã thêm sản phẩm vào giỏ hàng!"
-        type="success"
-        confirmText="OK"
-      />
-
-      {/* Error Alert */}
-      <AlertDialog
-        isOpen={showErrorAlert}
-        onClose={() => setShowErrorAlert(false)}
-        message={alertMessage}
-        type="error"
-        confirmText="Đóng"
-      />
-    </>
+    </div>
   );
 }

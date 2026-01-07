@@ -1,54 +1,11 @@
 const {
-  heroContent,
-  missionContent,
   newsHighlights,
-  aboutContent,
   businessDomains,
   blogCategories
 } = require('../data/staticContent');
 const { query, sql } = require('../services/db');
 const { success, error } = require('../utils/response');
-
-async function getHome(req, res) {
-  try {
-    const [hero, mission, news] = await Promise.all([
-      fetchSingle(
-        `SELECT TOP 1 headline, subheadline, ctaPrimaryLabel AS ctaPrimaryLabel,
-            ctaPrimaryHref AS ctaPrimaryHref, ctaSecondaryLabel AS ctaSecondaryLabel,
-            ctaSecondaryHref AS ctaSecondaryHref
-         FROM HeroSections ORDER BY updatedAt DESC`,
-        heroContent
-      ),
-      fetchSingle(
-        `SELECT TOP 1 mission, differentiators
-         FROM MissionStatements ORDER BY updatedAt DESC`,
-        missionContent
-      ),
-      fetchMany('SELECT TOP 3 id, title, category, publishedAt FROM NewsHighlights ORDER BY publishedAt DESC', newsHighlights)
-    ]);
-
-    return success(res, {
-      hero,
-      mission,
-      news
-    });
-  } catch (err) {
-    return error(res, 'Không thể tải dữ liệu trang chủ', 500, err.message);
-  }
-}
-
-async function getAbout(req, res) {
-  try {
-    const data = await fetchSingle(
-      `SELECT TOP 1 story, vision, mission, valuesJson AS values, foundersJson AS founders, timelineJson AS timeline
-       FROM AboutSections ORDER BY updatedAt DESC`,
-      aboutContent
-    );
-    return success(res, data);
-  } catch (err) {
-    return error(res, 'Không thể tải dữ liệu giới thiệu', 500, err.message);
-  }
-}
+const { getAllLatestNews, getNewsByCategory } = require('../services/newsGenerator');
 
 async function getDomains(req, res) {
   try {
@@ -87,6 +44,7 @@ async function getDomainById(req, res) {
 async function getBlog(req, res) {
   const { category } = req.query;
   try {
+    // Try to fetch from database first
     let sqlQuery = `SELECT id, title, summary, category, image, publishedAt
                     FROM BlogPosts`;
     const params = [];
@@ -96,16 +54,45 @@ async function getBlog(req, res) {
     }
     sqlQuery += ' ORDER BY publishedAt DESC';
 
-    const fallback = newsHighlights.map((item) => ({
-      ...item,
-      summary: item.title,
-      image: null
-    }));
+    let posts = [];
+    try {
+      posts = await fetchMany(sqlQuery, [], params);
+    } catch (dbErr) {
+      console.log('Database query failed, using generated news:', dbErr.message);
+    }
 
-    const posts = await fetchMany(sqlQuery, fallback, params);
-    return success(res, { categories: blogCategories, posts });
+    // If no posts from database, use auto-generated news
+    if (!posts || posts.length === 0) {
+      if (category) {
+        // Get news for specific category
+        posts = getNewsByCategory(category);
+      } else {
+        // Get all news
+        posts = getAllLatestNews();
+      }
+    } else if (category) {
+      // If we have posts from DB but category filter is active, filter them
+      posts = posts.filter(post => post.category === category);
+    }
+
+    // Update categories to match new structure
+    const updatedCategories = ['sam-han-quoc', 'my-pham', 'thoi-trang', 'tu-van-thuong-mai'];
+    
+    return success(res, { 
+      categories: updatedCategories, 
+      posts: posts.slice(0, 20) // Limit to 20 most recent posts
+    });
   } catch (err) {
-    return error(res, 'Không thể tải blog', 500, err.message);
+    console.error('Error in getBlog:', err);
+    // Fallback to generated news if everything fails
+    const filteredNews = category 
+      ? getNewsByCategory(category)
+      : getAllLatestNews();
+    
+    return success(res, { 
+      categories: ['sam-han-quoc', 'my-pham', 'thoi-trang', 'tu-van-thuong-mai'], 
+      posts: filteredNews.slice(0, 20)
+    });
   }
 }
 
@@ -176,8 +163,6 @@ function normalize(entry) {
 }
 
 module.exports = {
-  getHome,
-  getAbout,
   getDomains,
   getDomainById,
   getBlog,
