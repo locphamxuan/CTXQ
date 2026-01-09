@@ -92,16 +92,16 @@ export default function NavBar() {
         {/* Chỉ hiển thị nút đăng nhập trên máy của chủ sở hữu */}
         {isOwnerDevice && (
           isAuthenticated ? (
-            <button className="btn btn--secondary" onClick={logout} style={{ marginLeft: '0.5rem' }}>
-              Đăng xuất
-            </button>
-          ) : (
+          <button className="btn btn--secondary" onClick={logout} style={{ marginLeft: '0.5rem' }}>
+            Đăng xuất
+          </button>
+        ) : (
             <NavLink 
               to="/dang-nhap" 
               className="btn btn--primary nav__login-btn"
             >
-              Đăng nhập
-            </NavLink>
+            Đăng nhập
+          </NavLink>
           )
         )}
       </div>
