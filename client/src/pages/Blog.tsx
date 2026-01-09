@@ -8,14 +8,14 @@ const categories = [
   { id: 'sam-han-quoc', label: 'Sâm Hàn Quốc' },
   { id: 'my-pham', label: 'Mỹ phẩm' },
   { id: 'thoi-trang', label: 'Thời trang' },
-  { id: 'tu-van-thuong-mai', label: 'Tư vấn thương mại quốc tế' }
+  { id: 'tu-van-thuong-mai', label: 'Tư vấn đầu tư' }
 ];
 
 const categoryLabels: Record<string, string> = {
   'sam-han-quoc': 'Sâm Hàn Quốc',
   'my-pham': 'Mỹ phẩm',
   'thoi-trang': 'Thời trang',
-  'tu-van-thuong-mai': 'Tư vấn thương mại quốc tế'
+  'tu-van-thuong-mai': 'Tư vấn đầu tư'
 };
 
 export default function BlogPage() {
@@ -32,7 +32,7 @@ export default function BlogPage() {
       <SectionHeading
         eyebrow="Tin tức & Blog"
         title="Tin tức mới nhất về các lĩnh vực"
-        description="Cập nhật thường xuyên những thông tin mới nhất về sâm Hàn Quốc, mỹ phẩm, thời trang và tư vấn thương mại quốc tế."
+        description="Cập nhật thường xuyên những thông tin mới nhất về sâm Hàn Quốc, mỹ phẩm, thời trang và tư vấn đầu tư."
         align="center"
       />
       <div className="blog__filters">

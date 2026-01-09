@@ -342,67 +342,68 @@ export const cosmeticsPageContent: SpecialtyPageContent = {
 export const fashionPageContent: SpecialtyPageContent = {
   hero: {
     eyebrow: 'Thời trang',
-    title: 'Xưởng may Mayur Atelier',
+    title: 'Xưởng may Xuân Quỳnh',
     description:
-      'Giải pháp lookbook, đồng phục và thiết kế riêng đồng bộ nhận diện thương hiệu.',
+      'Xưởng may chuyên nghiệp với nhiều năm kinh nghiệm trong lĩnh vực may mặc, đồng phục và thời trang. Cam kết chất lượng và dịch vụ tốt nhất cho khách hàng.',
     stats: [
-      { id: 'atelier', value: '2', label: 'Xưởng chuẩn LEAN' },
-      { id: 'clients', value: '120+', label: 'Doanh nghiệp đồng hành' }
+      { id: 'experience', value: '10+', label: 'Năm kinh nghiệm' },
+      { id: 'clients', value: '500+', label: 'Khách hàng tin tưởng' }
     ]
   },
   highlights: [
-    'Đội ngũ thiết kế từng làm việc tại Seoul Fashion Week',
-    'Quy trình đo may tận nơi cho tập thể trên 50 người',
-    'Chủ động nguyên liệu: bamboo cotton, recycled polyester'
+    'Đội ngũ thợ may lành nghề với nhiều năm kinh nghiệm',
+    'Quy trình sản xuất chuyên nghiệp, đảm bảo chất lượng từng sản phẩm',
+    'Nhận may theo yêu cầu, từ đồng phục đến thời trang cao cấp',
+    'Giá cả hợp lý, giao hàng đúng hẹn'
   ],
   products: [
     {
-      id: 'lookbook-ss25',
-      name: 'Lookbook SS25 - Modern Heritage',
-      category: 'Bộ sưu tập',
+      id: 'uniform-service',
+      name: 'Dịch vụ may đồng phục',
+      category: 'Dịch vụ',
       description:
-        'Phong cách heritage phối kỹ thuật cắt 3D giúp tạo hình khối chuẩn chỉnh trong mọi chuyển động.',
+        'Chuyên may đồng phục công ty, trường học, bệnh viện với chất lượng cao và giá cả hợp lý. Nhận may số lượng lớn, giao hàng nhanh chóng.',
       image:
         'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=900&q=80',
-      benefits: ['Tư vấn styling', 'Độc quyền mẫu rập']
+      benefits: ['May theo mẫu', 'Tư vấn thiết kế']
     },
     {
-      id: 'uniform-suite',
-      name: 'Đồng phục doanh nghiệp Premium',
-      category: 'Dịch vụ đặt may',
+      id: 'custom-tailoring',
+      name: 'May đo theo yêu cầu',
+      category: 'Dịch vụ',
       description:
-        'Gói tư vấn từ moodboard, phát triển chất liệu đến giao hàng với SLA 30 ngày cho đơn hàng 1.000 bộ.',
+        'Nhận may đo quần áo, váy đầm, áo sơ mi theo yêu cầu của khách hàng. Đảm bảo vừa vặn, đẹp mắt và chất lượng tốt nhất.',
       image:
         'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=900&q=80',
-      benefits: ['Quản lý size chart online', 'Tùy chọn kháng khuẩn']
+      benefits: ['May đo chính xác', 'Chất liệu đa dạng']
     }
   ],
   rituals: [
     {
-      title: 'Quy trình đặt may doanh nghiệp',
+      title: 'Quy trình đặt may tại xưởng',
       steps: [
-        'Workshop khám phá văn hóa thương hiệu',
-        'Phát triển moodboard & phê duyệt mẫu thử',
-        'Đo tại chỗ và nhập số đo qua portal',
-        'Sản xuất – QC – bàn giao đồng phục'
+        'Tư vấn và chọn mẫu, chất liệu phù hợp',
+        'Đo kích thước và ghi nhận yêu cầu chi tiết',
+        'Cắt may và hoàn thiện sản phẩm',
+        'Kiểm tra chất lượng và giao hàng cho khách'
       ]
     }
   ],
   articles: [
     {
-      id: 'garment-insight-1',
-      title: 'Xu hướng chất liệu bền vững 2025',
-      summary: 'Các dòng vải recycle đi kèm chứng nhận.',
-      category: 'garment',
+      id: 'sewing-tips-1',
+      title: 'Cách chọn chất liệu vải phù hợp cho đồng phục',
+      summary: 'Hướng dẫn chọn vải chất lượng tốt, bền đẹp và phù hợp với môi trường làm việc.',
+      category: 'thoi-trang',
       image:
         'https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&w=900&q=80',
       publishedAt: '2025-10-02'
     },
     {
-      id: 'garment-insight-2',
-      title: '5 tips xây dựng đồng phục truyền cảm hứng',
-      summary: 'Tư duy màu sắc, form dáng và vật liệu.',
-      category: 'garment',
+      id: 'sewing-tips-2',
+      title: 'Bảo quản và giặt đồ may đúng cách',
+      summary: 'Những lưu ý quan trọng để giữ quần áo may luôn bền đẹp và mới như ban đầu.',
+      category: 'thoi-trang',
       image:
         'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=900&q=80',
       publishedAt: '2025-08-30'
@@ -412,57 +413,57 @@ export const fashionPageContent: SpecialtyPageContent = {
 
 export const consultingPageContent: SpecialtyPageContent = {
   hero: {
-    eyebrow: 'Tư vấn thương mại quốc tế',
-    title: 'Trung tâm giải pháp tài chính – trading hub',
+    eyebrow: 'Tư vấn đầu tư',
+    title: 'Trung tâm tư vấn đầu tư chuyên nghiệp',
     description:
-      'Đồng hành cùng doanh nghiệp Việt mở rộng ra thị trường châu Á thông qua tư vấn vốn, quản trị rủi ro và logistics.',
+      'Đồng hành cùng nhà đầu tư và doanh nghiệp trong việc xây dựng danh mục đầu tư, phân tích thị trường và tối ưu hóa lợi nhuận.',
     stats: [
-      { id: 'experts', value: '15', label: 'Chuyên gia đa ngành' },
-      { id: 'markets', value: '7', label: 'Quốc gia đối tác' }
+      { id: 'experts', value: '20+', label: 'Chuyên gia đầu tư' },
+      { id: 'markets', value: '10+', label: 'Lĩnh vực đầu tư' }
     ]
   },
   highlights: [
-    'Phân tích định lượng bằng dữ liệu thị trường cập nhật hằng tuần',
-    'Kết nối hệ sinh thái ngân hàng – bảo hiểm – logistics',
-    'Chương trình cố vấn 1:1 cho lãnh đạo SMEs'
+    'Phân tích thị trường và đánh giá cơ hội đầu tư theo thời gian thực',
+    'Tư vấn xây dựng danh mục đầu tư đa dạng và cân bằng rủi ro',
+    'Hỗ trợ quản lý tài sản và tối ưu hóa lợi nhuận đầu tư'
   ],
   products: [
     {
-      id: 'investment-advisory',
-      name: 'Tư vấn đầu tư',
+      id: 'portfolio-management',
+      name: 'Quản lý danh mục đầu tư',
       category: 'Dịch vụ',
       description:
-        'Thiết kế danh mục vốn, tối ưu chi phí sử dụng vốn lưu động và kênh huy động quốc tế.',
+        'Thiết kế và quản lý danh mục đầu tư đa dạng, phân bổ tài sản hợp lý và theo dõi hiệu quả đầu tư.',
       image:
         'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&w=900&q=80',
-      benefits: ['Phân tích scenario', 'Dashboard KPI realtime']
+      benefits: ['Phân tích rủi ro', 'Báo cáo hiệu quả đầu tư']
     },
     {
-      id: 'treasury',
-      name: 'Quản lý tài chính doanh nghiệp',
+      id: 'market-analysis',
+      name: 'Phân tích thị trường đầu tư',
       category: 'Dịch vụ',
       description:
-        'Xây dựng cấu trúc dòng tiền, policy kiểm soát FX và kế hoạch bảo hiểm rủi ro thương mại.',
+        'Nghiên cứu và phân tích xu hướng thị trường, đánh giá tiềm năng đầu tư và đưa ra khuyến nghị chiến lược.',
       image:
         'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1000&q=80',
-      benefits: ['Cố vấn onsite', 'Tài liệu chuẩn IFRS']
+      benefits: ['Báo cáo thị trường', 'Dự báo xu hướng']
     }
   ],
   articles: [
     {
-      id: 'finance-insight-1',
-      title: 'Xu hướng huy động vốn 2025',
-      summary: 'Những kênh vốn thay thế doanh nghiệp nên cân nhắc.',
-      category: 'finance-consulting',
+      id: 'investment-trends-2025',
+      title: 'Xu hướng đầu tư năm 2025',
+      summary: 'Những lĩnh vực đầu tư tiềm năng và cơ hội sinh lời trong năm tới.',
+      category: 'tu-van-thuong-mai',
       image:
         'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1000&q=80',
       publishedAt: '2025-09-14'
     },
     {
-      id: 'finance-insight-2',
-      title: 'Checklist quản trị dòng tiền SME',
-      summary: 'Bộ tiêu chí giúp doanh nghiệp giữ thanh khoản ổn định.',
-      category: 'finance-consulting',
+      id: 'portfolio-optimization',
+      title: 'Tối ưu hóa danh mục đầu tư',
+      summary: 'Chiến lược phân bổ tài sản và quản lý rủi ro hiệu quả cho nhà đầu tư.',
+      category: 'tu-van-thuong-mai',
       image:
         'https://images.unsplash.com/photo-1434626881859-194d67b2b86f?auto=format&fit=crop&w=1000&q=80',
       publishedAt: '2025-08-22'
@@ -490,10 +491,10 @@ export const blogPosts: BlogPost[] = [
     publishedAt: '2025-10-02'
   },
   {
-    id: 'finance-playbook-1',
-    title: 'Checklist quản trị dòng tiền cho SME cuối năm',
-    summary: '3 kênh tín dụng cần chuẩn bị trước mùa cao điểm thương mại.',
-    category: 'finance-consulting',
+    id: 'investment-guide-1',
+    title: 'Hướng dẫn đầu tư cho người mới bắt đầu',
+    summary: 'Những kiến thức cơ bản và chiến lược đầu tư hiệu quả cho người mới.',
+    category: 'tu-van-thuong-mai',
     image:
       'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&w=900&q=80',
     publishedAt: '2025-10-25'

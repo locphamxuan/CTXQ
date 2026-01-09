@@ -7,7 +7,7 @@ const categoryLabels: Record<string, string> = {
   'sam-han-quoc': 'Sâm Hàn Quốc',
   'my-pham': 'Mỹ phẩm',
   'thoi-trang': 'Thời trang',
-  'tu-van-thuong-mai': 'Tư vấn thương mại quốc tế'
+  'tu-van-thuong-mai': 'Tư vấn đầu tư'
 };
 
 export default function BlogDetailPage() {

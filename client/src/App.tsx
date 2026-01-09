@@ -2,7 +2,6 @@ import { Route, Routes, Navigate } from 'react-router-dom';
 import NavBar from './components/NavBar';
 import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
-import AboutPage from './pages/About';
 import DomainsPage from './pages/Domains';
 import BlogPage from './pages/Blog';
 import BlogDetailPage from './pages/BlogDetail';
@@ -15,6 +14,7 @@ import FashionPage from './pages/Fashion';
 import ConsultingPage from './pages/Consulting';
 import LoginPage from './pages/Login';
 import AdminDashboard from './pages/AdminDashboard';
+import SearchResultsPage from './pages/SearchResults';
 
 export default function App() {
   return (
@@ -23,7 +23,6 @@ export default function App() {
       <main>
         <Routes>
           <Route path="/" element={<Navigate to="/san-pham/nhan-sam-han-quoc" replace />} />
-          <Route path="/gioi-thieu" element={<AboutPage />} />
           <Route path="/linh-vuc" element={<DomainsPage />} />
           <Route path="/san-pham/nhan-sam-han-quoc" element={<GinsengPage />} />
           <Route path="/san-pham/nhan-sam-han-quoc/:id" element={<GinsengDetailPage />} />
@@ -33,6 +32,7 @@ export default function App() {
           <Route path="/linh-vuc/tu-van-thuong-mai" element={<ConsultingPage />} />
           <Route path="/tin-tuc" element={<BlogPage />} />
           <Route path="/tin-tuc/:id" element={<BlogDetailPage />} />
+          <Route path="/tim-kiem" element={<SearchResultsPage />} />
           <Route path="/lien-he" element={<ContactPage />} />
           <Route path="/dang-nhap" element={<LoginPage />} />
           <Route

@@ -30,8 +30,8 @@ const heroDomains: HeroDomain[] = [
   },
   {
     id: 'trade-consulting',
-    label: 'Tư vấn thương mại quốc tế',
-    description: 'Kết nối chuỗi cung ứng',
+    label: 'Tư vấn đầu tư',
+    description: 'Quản lý danh mục đầu tư',
     link: '/linh-vuc/tu-van-thuong-mai'
   }
 ];

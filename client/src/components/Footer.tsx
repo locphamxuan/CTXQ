@@ -1,49 +1,45 @@
 import { Link } from 'react-router-dom';
+import { contactInfo } from '../data/mockContent';
+import logoImage from '../img/Stylized Logo with Interlocking \'X\' and \'Q\'.png';
 
 export default function Footer() {
   return (
     <footer className="footer">
       <div>
-        <h4>CTY XQ Holdings</h4>
-        <p>Kết nối sức khỏe, phong cách và tài chính.</p>
-        <form
-          className="footer__newsletter"
-          onSubmit={(event) => {
-            event.preventDefault();
-            const form = event.target as HTMLFormElement;
-            form.reset();
-            alert('Cảm ơn bạn đã đăng ký nhận tin!');
-          }}
-        >
-          <input type="email" placeholder="Email của bạn" required />
-          <button type="submit">Đăng ký</button>
-        </form>
+        <Link to="/san-pham/nhan-sam-han-quoc" style={{ display: 'inline-block', marginBottom: '1rem' }}>
+          <img 
+            src={logoImage} 
+            alt="CTXQ" 
+            style={{ 
+              height: '50px', 
+              width: 'auto',
+              maxWidth: '150px'
+            }} 
+          />
+        </Link>
+        <h4 style={{ marginTop: '0.5rem' }}>CTXQ</h4>
+        <div className="footer__contact">
+          <p>
+            <strong>Địa chỉ:</strong> {contactInfo.address}
+          </p>
+          <p>
+            <strong>Điện thoại:</strong>{' '}
+            <a href={`tel:${contactInfo.phone.split(' ')[0]}`}>{contactInfo.phone}</a>
+          </p>
+          <p>
+            <strong>Email:</strong>{' '}
+            <a href={`mailto:${contactInfo.email}`}>{contactInfo.email}</a>
+          </p>
+        </div>
       </div>
       <div>
         <h5>Liên kết nhanh</h5>
         <ul>
           <li>
-            <Link to="/">Trang chủ</Link>
-          </li>
-          <li>
-            <Link to="/linh-vuc">Lĩnh vực</Link>
-          </li>
-          <li>
             <Link to="/tin-tuc">Tin tức</Link>
           </li>
           <li>
             <Link to="/lien-he">Liên hệ</Link>
-          </li>
-        </ul>
-      </div>
-      <div>
-        <h5>Chính sách</h5>
-        <ul>
-          <li>
-            <a href="/">Bảo mật</a>
-          </li>
-          <li>
-            <a href="/">Điều khoản sử dụng</a>
           </li>
         </ul>
       </div>
@@ -65,7 +61,6 @@ export default function Footer() {
             Zalo
           </a>
         </div>
-        <small>© {new Date().getFullYear()} CTY XQ Holdings</small>
       </div>
     </footer>
   );
